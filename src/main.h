@@ -34,10 +34,6 @@ typedef struct tagLVITEM64W {
 #endif
 } LVITEM64W, *LPLVITEM64W;
 
-// struct Iconitem {
-// 	POINT pint;
-// 	std::wstring name;
-// };
 struct IconitemWithIndex {
 	int index;         // 图标的索引
 	POINT pint;        // 图标的位置
@@ -66,3 +62,6 @@ std::list<IconitemWithIndex> GetIconPositionWithName();
 void SetIconPosition(HWND hListView, int iIconIndex, POINT pt);
 std::list<std::wstring> getFilesInDirectory(const std::wstring& directoryPath);
 void WatchDirectoryChanges(LPCWSTR path);
+void arrangeDesktopIcons(HWND hListView,
+                         const std::vector<std::vector<POINT>>& PointList,
+                         const FileClassification& classification);

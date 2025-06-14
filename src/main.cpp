@@ -5,99 +5,6 @@
 using namespace std;
 namespace fs = std::filesystem;
 
-//
-
-void arrangeDesktopIcons(HWND hListView,
-                         const std::vector<std::vector<POINT>>& PointList,
-                         const FileClassification& classification) {
-	int rows = PointList.size();
-	int cols = PointList[0].size();
-
-	// Create a matrix to store icon indices (or -1 if empty)
-	std::vector<std::vector<int>> iconMatrix(rows, std::vector<int>(cols, -1));
-
-	// Get icon lists from classification
-	std::list<std::wstring> aClass = classification.files; // 'A' = Files
-	std::list<std::wstring> bClass =
-	    classification.directories; // 'B' = Directories
-	std::list<std::wstring> cClass =
-	    classification.Icondirectories; // 'C' = Icon directories
-
-	// Step 1: Fill 'A' and 'B' classes from left to right, column-by-column
-	auto itA = aClass.begin();
-	auto itB = bClass.begin();
-	int totalPlaced = 0;
-	int aCount = aClass.size();
-	int bCount = bClass.size();
-
-	for (int col = 0; col < cols && totalPlaced < aCount + bCount; ++col) {
-		for (int row = 0; row < rows && totalPlaced < aCount + bCount; ++row) {
-			std::wstring filePath;
-			if (totalPlaced < aCount && itA != aClass.end()) {
-				filePath = *itA;
-				++itA;
-			} else if (itB != bClass.end()) {
-				filePath = *itB;
-				++itB;
-			}
-			totalPlaced++;
-
-			// Find the icon index by name (assuming name matches filePath's
-			// filename)
-			std::wstring fileName = fs::path(filePath).filename().wstring();
-			int index = -1;
-			auto iconList = GetIconPositionWithName();
-			for (const auto& item : iconList) {
-				if (item.name == fileName) {
-					index = item.index;
-					break;
-				}
-			}
-			if (index != -1) {
-				iconMatrix[row][col] = index;
-			}
-		}
-	}
-
-	// Step 2: Fill 'C' class from right to left, column-by-column
-	auto itC = cClass.begin();
-	int cCount = cClass.size();
-	for (int col = cols - 1; col >= 0 && cCount > 0; --col) {
-		for (int row = 0; row < rows && cCount > 0; ++row) {
-			if (iconMatrix[row][col] != -1) {
-				continue; // Skip occupied slots
-			}
-			if (itC != cClass.end()) {
-				std::wstring filePath = *itC;
-				std::wstring fileName = fs::path(filePath).filename().wstring();
-				int index = -1;
-				auto iconList = GetIconPositionWithName();
-				for (const auto& item : iconList) {
-					if (item.name == fileName) {
-						index = item.index;
-						break;
-					}
-				}
-				if (index != -1) {
-					iconMatrix[row][col] = index;
-					--cCount;
-					++itC;
-				}
-			}
-		}
-	}
-
-	// Step 3: Apply positions to the desktop
-	for (int row = 0; row < rows; ++row) {
-		for (int col = 0; col < cols; ++col) {
-			int index = iconMatrix[row][col];
-			if (index != -1) {
-				SetIconPosition(hListView, index, PointList[row][col]);
-			}
-		}
-	}
-}
-
 int main() {
 	HWND hListView = NULL;
 	HWND hDesktop = GetShellWindow();
@@ -135,26 +42,13 @@ int main() {
 		return 1;
 	}
 
-	// Arrange icons according to the fillMatrix rule
 	arrangeDesktopIcons(hListView, PointList, classification);
-
-	// Optional: Output the final layout for debugging
-	std::wcout << L"Desktop layout updated (" << PointList.size() << L" rows, "
-	           << PointList[0].size() << L" columns):\n";
-	auto updatedIcons = GetIconPositionWithName();
-	for (const auto& item : updatedIcons) {
-		std::wcout << L"[name: " << item.name << L", Point: (" << item.pint.x
-		           << L", " << item.pint.y << L")]\n";
-	}
-
 	return 0;
 }
 
-// Ensure operator== for POINT is defined
 inline bool operator==(const POINT& lhs, const POINT& rhs) {
 	return lhs.x == rhs.x && lhs.y == rhs.y;
 }
-//
 
 std::list<std::wstring> getFilesInDirectory(const std::wstring& directoryPath) {
 	std::list<std::wstring> result;
@@ -165,73 +59,6 @@ std::list<std::wstring> getFilesInDirectory(const std::wstring& directoryPath) {
 
 	return result;
 }
-// int main() {
-// 	HWND hListView = NULL;
-// 	HWND hDesktop = GetShellWindow();
-// 	if (hDesktop) {
-// 		HWND hDefView =
-// 		    FindWindowExW(hDesktop, NULL, L"SHELLDLL_DefView", NULL);
-// 		if (hDefView) {
-// 			hListView =
-// 			    FindWindowExW(hDefView, NULL, L"SysListView32", L"FolderView");
-// 		}
-// 	}
-
-// 	_setmode(_fileno(stdout), _O_U16TEXT);
-// 	std::list<std::wstring> paths =
-// 	    getFilesInDirectory(L"C:\\Users\\123\\Desktop\\");
-
-// 	// 存储合并后的图标信息列表
-// 	std::list<IconitemWithIndex> DesktopPointList;
-
-// 	// 获取桌面图标的位置和名称映射关系
-// 	auto IconList = GetIconPositionWithName();
-// 	if (!IconList.empty()) {
-// 		// 获取列表视图中的图标位置信息（现在是二维数组）
-// 		std::vector<std::vector<POINT>> PointList =
-// 		    GetListviewItemPosition(IconList.front().pint, hListView);
-// 		if (PointList.empty() || PointList[0].empty() || IconList.empty()) {
-// 			return 1;
-// 		}
-
-// 		// 输出图标列表大小信息
-// 		wcout << L"iconList.size() " << PointList.size() << L" rows, "
-// 		      << PointList[0].size() << L" columns\n";
-
-// 		// 将位置信息与图标名称进行匹配合并
-// 		int ExceedIndex = IconList.size();
-// 		for (size_t r = 0; r < PointList.size(); ++r) {
-// 			for (size_t c = 0; c < PointList[r].size(); ++c) {
-// 				const POINT& PointListItem = PointList[r][c];
-// 				bool found = false;
-// 				for (const auto& IconListItem : IconList) {
-// 					if (PointListItem == IconListItem.pint) {
-// 						DesktopPointList.push_back(
-// 						    IconitemWithIndex{IconListItem.index, PointListItem,
-// 						                      IconListItem.name});
-// 						found = true;
-// 						break;
-// 					}
-// 				}
-// 				if (!found) {
-// 					ExceedIndex += 1;
-// 					DesktopPointList.push_back(IconitemWithIndex{
-// 					    ExceedIndex, PointListItem, L"Unknow"});
-// 				}
-// 			}
-// 		}
-// 	}
-
-// 	// 输出最终合并后的图标信息
-// 	for (const auto& DesktopListItem : DesktopPointList) {
-// 		SetIconPosition(hListView, DesktopListItem.index, DesktopListItem.pint);
-// 		std::wcout << L"[name: " << DesktopListItem.name << L",Point: ("
-// 		           << DesktopListItem.pint.x << L" " << DesktopListItem.pint.y
-// 		           << L")]\n";
-// 	}
-
-// 	return 0;
-// }
 
 FileClassification classifyFiles(const std::list<std::wstring>& paths) {
 	FileClassification result;
@@ -241,7 +68,8 @@ FileClassification classifyFiles(const std::list<std::wstring>& paths) {
 			std::wprintf(L"Path does not exist:  %ls\n", path.c_str());
 			continue;
 		}
-		if (fs::is_regular_file(path)) {
+		if (fs::is_regular_file(path) &&
+		    (fs::path(path).extension().wstring() != L".ini")) {
 			result.files.push_back(path);
 		} else if (fs::is_directory(path) && is_have_icon(path)) {
 			result.Icondirectories.push_back(path);
@@ -253,24 +81,6 @@ FileClassification classifyFiles(const std::list<std::wstring>& paths) {
 			std::wprintf(L"Unknown file type:  %ls\n", path.c_str());
 		}
 	}
-	std::wprintf(L"Files:\n");
-	for (const auto& file : result.files) {
-		std::wprintf(L"%s\n", file.c_str());
-	}
-
-	std::wprintf(L"Directories:\n");
-	for (const auto& dir : result.directories) {
-		std::wprintf(L"%s\n", dir.c_str());
-	}
-	std::wprintf(L"IconDirectories:\n");
-	for (const auto& icondir : result.Icondirectories) {
-		std::wprintf(L"%s\n", icondir.c_str());
-	}
-
-	std::wprintf(L"Shortcuts:\n");
-	for (const auto& shortcut : result.shortcuts) {
-		std::wprintf(L"%s\n", shortcut.c_str());
-	}
 	return result;
 }
 
@@ -281,7 +91,6 @@ bool is_have_icon(const std::wstring& path) {
 			return false;
 		}
 
-		// 遍历目录，查找是否有 .ini 文件
 		for (const auto& entry : fs::directory_iterator(dirPath)) {
 			if (entry.is_regular_file() &&
 			    entry.path().extension() == L".ini") {
@@ -564,4 +373,108 @@ void WatchDirectoryChanges(LPCWSTR lpDirectoryPath) {
 		}
 	}
 	CloseHandle(hDir);
+}
+
+void arrangeDesktopIcons(HWND hListView,
+                         const std::vector<std::vector<POINT>>& PointList,
+                         const FileClassification& classification) {
+	// 获取行数和列数
+	int rows = PointList.size();
+	int cols = PointList[0].size();
+
+	// 初始化图标矩阵，所有元素设为-1
+	std::vector<std::vector<int>> iconMatrix(rows, std::vector<int>(cols, -1));
+
+	// 分别获取目录、文件和特殊目录的列表
+	std::list<std::wstring> aClass = classification.directories;
+	std::list<std::wstring> bClass = classification.files;
+	std::list<std::wstring> cClass = classification.Icondirectories;
+
+	// 获取带文件名的图标列表
+	auto iconList = GetIconPositionWithName();
+
+	// 初始化目录和文件的迭代器
+	auto itA = aClass.begin();
+	auto itB = bClass.begin();
+	// 初始化已放置图标的总数
+	int totalPlaced = 0;
+	// 获取目录和文件的数量
+	int aCount = aClass.size();
+	int bCount = bClass.size();
+
+	// 遍历矩阵，为目录和文件放置图标
+	for (int col = 0; col < cols && totalPlaced < aCount + bCount; ++col) {
+		for (int row = 0; row < rows && totalPlaced < aCount + bCount; ++row) {
+			std::wstring filePath;
+			// 优先放置目录图标
+			if (totalPlaced < aCount && itA != aClass.end()) {
+				filePath = *itA;
+				++itA;
+			} else if (itB != bClass.end()) {
+				// 如果目录图标放置完毕，则放置文件图标
+				filePath = *itB;
+				++itB;
+			}
+			totalPlaced++;
+
+			// 通过文件名获取图标索引
+			std::wstring fileName = fs::path(filePath).filename().wstring();
+			int index = -1;
+			for (const auto& item : iconList) {
+				if (item.name == fileName) {
+					index = item.index;
+					break;
+				}
+			}
+			// 如果找到图标，则记录其索引到矩阵中
+			if (index != -1) {
+				iconMatrix[row][col] = index;
+			}
+		}
+	}
+
+	// 初始化特殊目录的迭代器和数量
+	auto itC = cClass.begin();
+	int cCount = cClass.size();
+	// 遍历矩阵，为特殊目录放置图标，从右向左放置
+	for (int col = cols - 1; col >= 0 && cCount > 0; --col) {
+		for (int row = 0; row < rows && cCount > 0; ++row) {
+			// 如果当前位置已有图标，则跳过
+			if (iconMatrix[row][col] != -1) {
+				continue;
+			}
+			// 放置特殊目录图标
+			if (itC != cClass.end()) {
+				std::wstring filePath = *itC;
+				std::wstring fileName = fs::path(filePath).filename().wstring();
+				int index = -1;
+				for (const auto& item : iconList) {
+					if (item.name == fileName) {
+						index = item.index;
+						break;
+					}
+				}
+				// 如果找到图标，则记录其索引到矩阵中，并更新计数
+				if (index != -1) {
+					iconMatrix[row][col] = index;
+					--cCount;
+					++itC;
+				}
+			}
+		}
+	}
+	// 禁止列表视图的绘制
+	SendMessage(hListView, WM_SETREDRAW, FALSE, 0);
+	// 根据图标矩阵更新图标的实际位置
+	for (int row = 0; row < rows; ++row) {
+		for (int col = 0; col < cols; ++col) {
+			int index = iconMatrix[row][col];
+			// 如果当前位置有图标(索引不为-1且不为0)，则设置其位置
+			if (index != -1 && index != 0) {
+				SetIconPosition(hListView, index, PointList[row][col]);
+			}
+		}
+	}
+	// 重新启用ListView控件的重绘功能
+	SendMessage(hListView, WM_SETREDRAW, TRUE, 0);
 }
