@@ -15,7 +15,7 @@
   <Identity
     Name="13db64bb-5548-4b7b-aa93-b1067905ea60"
     Publisher="CN=WWW4R4E"
-    Version="1.0.1.0" />
+    Version="1.0.2.0" />
 
   <Properties>
     <DisplayName>Msix</DisplayName>
