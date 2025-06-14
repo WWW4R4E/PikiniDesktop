@@ -1,3 +1,4 @@
+#pragma once
 #include <ShlObj.h>
 #include <Windows.h>
 #include <atlbase.h>
@@ -32,7 +33,7 @@ typedef struct tagLVITEM64W {
 	UINT cColumns;
 	PUINT puColumns;
 #endif
-} LVITEM64W, *LPLVITEM64W;
+} LVITEM64W, * LPLVITEM64W;
 
 struct IconitemWithIndex {
 	int index;         // 图标的索引
@@ -47,21 +48,27 @@ struct FileChangeType {
 
 // 定义事件类型数组
 const FileChangeType changeTypes[] = {
-    {FILE_ACTION_ADDED, L"文件被添加"},
-    {FILE_ACTION_REMOVED, L"文件被删除"},
-    {FILE_ACTION_MODIFIED, L"文件被修改"},
-    {FILE_ACTION_RENAMED_OLD_NAME, L"文件被重命名（旧名称）"},
-    {FILE_ACTION_RENAMED_NEW_NAME, L"文件被重命名（新名称）"}};
+	{FILE_ACTION_ADDED, L"文件被添加"},
+	{FILE_ACTION_REMOVED, L"文件被删除"},
+	{FILE_ACTION_MODIFIED, L"文件被修改"},
+	{FILE_ACTION_RENAMED_OLD_NAME, L"文件被重命名（旧名称）"},
+	{FILE_ACTION_RENAMED_NEW_NAME, L"文件被重命名（新名称）"} };
 inline bool operator==(const POINT& lhs, const POINT& rhs);
-bool is_have_icon(const std::wstring& path);
-FileClassification classifyFiles(const std::list<std::wstring>& paths);
+bool HasIcon(const std::wstring& path);
+bool HasHiddenFile(const std::wstring& path);
+FileClassification ClassifyFiles(const std::list<std::wstring>& paths);
 std::vector<std::vector<POINT>> GetListviewItemPosition(POINT itmePoint,
-                                                        HWND hListView);
+	HWND hListView);
 std::list<IconitemWithIndex> GetIconPositionWithName();
 
 void SetIconPosition(HWND hListView, int iIconIndex, POINT pt);
 std::list<std::wstring> getFilesInDirectory(const std::wstring& directoryPath);
 void WatchDirectoryChanges(LPCWSTR path);
 void arrangeDesktopIcons(HWND hListView,
-                         const std::vector<std::vector<POINT>>& PointList,
-                         const FileClassification& classification);
+	const std::vector<std::vector<POINT>>& PointList,
+	const FileClassification& classification);
+int ClearDesktopIcons();
+
+class ClearDesktop
+{
+};

@@ -2,3 +2,7 @@
 .xmake/
 build/
 .vscode/
+.vs/
+x64/
+obj/
+bin/

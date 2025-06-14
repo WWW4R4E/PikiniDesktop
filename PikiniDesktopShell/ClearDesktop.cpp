@@ -1,19 +1,22 @@
-#include "main.h"
+#include "pch.h"
+#include "ClearDesktop.h"
 #include <filesystem>
 #include <iostream>
 
 using namespace std;
 namespace fs = std::filesystem;
 
-int main() {
+
+
+int ClearDesktopIcons() {
 	HWND hListView = NULL;
 	HWND hDesktop = GetShellWindow();
 	if (hDesktop) {
 		HWND hDefView =
-		    FindWindowExW(hDesktop, NULL, L"SHELLDLL_DefView", NULL);
+			FindWindowExW(hDesktop, NULL, L"SHELLDLL_DefView", NULL);
 		if (hDefView) {
 			hListView =
-			    FindWindowExW(hDefView, NULL, L"SysListView32", L"FolderView");
+				FindWindowExW(hDefView, NULL, L"SysListView32", L"FolderView");
 		}
 	}
 
@@ -24,10 +27,10 @@ int main() {
 
 	_setmode(_fileno(stdout), _O_U16TEXT);
 	std::list<std::wstring> paths =
-	    getFilesInDirectory(L"C:\\Users\\123\\Desktop\\");
+		getFilesInDirectory(L"C:\\Users\\123\\Desktop\\");
 
 	// Classify files
-	FileClassification classification = classifyFiles(paths);
+	FileClassification classification = ClassifyFiles(paths);
 
 	// Get desktop grid
 	auto iconList = GetIconPositionWithName();
@@ -36,7 +39,7 @@ int main() {
 		return 1;
 	}
 	std::vector<std::vector<POINT>> PointList =
-	    GetListviewItemPosition(iconList.front().pint, hListView);
+		GetListviewItemPosition(iconList.front().pint, hListView);
 	if (PointList.empty() || PointList[0].empty()) {
 		std::wcerr << L"Failed to get desktop grid." << std::endl;
 		return 1;
@@ -60,7 +63,7 @@ std::list<std::wstring> getFilesInDirectory(const std::wstring& directoryPath) {
 	return result;
 }
 
-FileClassification classifyFiles(const std::list<std::wstring>& paths) {
+FileClassification ClassifyFiles(const std::list<std::wstring>& paths) {
 	FileClassification result;
 
 	for (const auto& path : paths) {
@@ -68,23 +71,25 @@ FileClassification classifyFiles(const std::list<std::wstring>& paths) {
 			std::wprintf(L"Path does not exist:  %ls\n", path.c_str());
 			continue;
 		}
-		if (fs::is_regular_file(path) &&
-		    (fs::path(path).extension().wstring() != L".ini")) {
+		if (fs::is_regular_file(path) && !HasHiddenFile(path)) {
 			result.files.push_back(path);
-		} else if (fs::is_directory(path) && is_have_icon(path)) {
+		}
+		else if (fs::is_directory(path) && HasIcon(path)) {
 			result.Icondirectories.push_back(path);
-		} else if (fs::is_directory(path)) {
+		}
+		else if (fs::is_directory(path)) {
 			result.directories.push_back(path);
-		} else if (fs::is_symlink(path)) {
+		}
+		else if (fs::is_symlink(path)) {
 			result.shortcuts.push_back(path);
-		} else {
+		}
+		else {
 			std::wprintf(L"Unknown file type:  %ls\n", path.c_str());
 		}
 	}
 	return result;
 }
-
-bool is_have_icon(const std::wstring& path) {
+bool HasIcon(const std::wstring& path) {
 	try {
 		fs::path dirPath(path);
 		if (!fs::exists(dirPath) || !fs::is_directory(dirPath)) {
@@ -93,21 +98,35 @@ bool is_have_icon(const std::wstring& path) {
 
 		for (const auto& entry : fs::directory_iterator(dirPath)) {
 			if (entry.is_regular_file() &&
-			    entry.path().extension() == L".ini") {
+				entry.path().extension() == L".ini") {
 				return true;
 			}
 		}
 		return false;
-	} catch (const fs::filesystem_error& e) {
+	}
+	catch (const fs::filesystem_error& e) {
 		std::wcerr << L"Error accessing directory: " << path.c_str()
-		           << L", error: " << e.what() << std::endl;
+			<< L", error: " << e.what() << std::endl;
 		return false;
 	}
+}
+bool HasHiddenFile(const std::wstring& path) {
+	fs::path p = fs::path(path).filename();
+	std::wstring filename = p.wstring();
+
+	if (p.has_extension()) {
+		const std::wstring extension = p.extension().wstring();
+		if (extension == L".ini" || extension == L".tmp") {
+			return true;
+		}
+	}
+
+	return !filename.empty() && (filename.front() == L'.' || filename.front() == L'~');
 }
 
 // 获取桌面排列视图
 std::vector<std::vector<POINT>> GetListviewItemPosition(POINT itmePoint,
-                                                        HWND hListView) {
+	HWND hListView) {
 	std::vector<std::vector<POINT>> IconGrid;
 	// 1. 设置DPI感知 (在任何UI或COM操作前完成)
 	SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
@@ -116,7 +135,7 @@ std::vector<std::vector<POINT>> GetListviewItemPosition(POINT itmePoint,
 	HRESULT hr = CoInitialize(NULL);
 	if (FAILED(hr)) {
 		std::cerr << "Failed to initialize COM library. Error code: " << hr
-		          << std::endl;
+			<< std::endl;
 		return IconGrid;
 	}
 
@@ -131,7 +150,7 @@ std::vector<std::vector<POINT>> GetListviewItemPosition(POINT itmePoint,
 		hr = SHGetDesktopFolder(&pDesktopFolder);
 		if (FAILED(hr)) {
 			std::cerr << "Failed to get desktop folder. Error code: " << hr
-			          << std::endl;
+				<< std::endl;
 			CoUninitialize();
 			return IconGrid;
 		}
@@ -139,10 +158,10 @@ std::vector<std::vector<POINT>> GetListviewItemPosition(POINT itmePoint,
 		// 4. 获取桌面的 IShellView 接口
 		HWND hDesktop = GetShellWindow();
 		hr = pDesktopFolder->CreateViewObject(hDesktop,
-		                                      IID_PPV_ARGS(&pShellView));
+			IID_PPV_ARGS(&pShellView));
 		if (FAILED(hr)) {
 			std::cerr << "Failed to create view object. Error code: " << hr
-			          << std::endl;
+				<< std::endl;
 			CoUninitialize();
 			return IconGrid;
 		}
@@ -152,7 +171,7 @@ std::vector<std::vector<POINT>> GetListviewItemPosition(POINT itmePoint,
 		hr = pShellView->QueryInterface(IID_PPV_ARGS(&pFolderView));
 		if (FAILED(hr)) {
 			std::cerr << "Failed to query IFolderView interface. Error code: "
-			          << hr << std::endl;
+				<< hr << std::endl;
 			CoUninitialize();
 			return IconGrid;
 		}
@@ -162,23 +181,24 @@ std::vector<std::vector<POINT>> GetListviewItemPosition(POINT itmePoint,
 	// --- 至此，我们已经安全地获取了桌面视图对象，不会导致闪烁 ---
 
 	// 6. 获取桌面 ListView 的客户端矩形
-	RECT rc = {0};
+	RECT rc = { 0 };
 
 	CComPtr<IOleWindow> pOleWindow;
 	hr = pFolderView->QueryInterface(IID_PPV_ARGS(&pOleWindow));
 	// 检查是否最终成功获取了句柄
 	if (hListView) {
 		GetClientRect(hListView, &rc);
-	} else {
+	}
+	else {
 		std::cerr << "Failed to get ListView handle using both methods."
-		          << std::endl;
+			<< std::endl;
 		CoUninitialize();
 		return IconGrid;
 	}
 
 	// pOleWindow 超出作用域，自动释放
 	// 7. 获取图标间距 (网格大小)
-	POINT spacing = {0, 0};
+	POINT spacing = { 0, 0 };
 	DWORD itemSpacing = ListView_GetItemSpacing(hListView, FALSE);
 	// 表示获取小图标间距，通常桌面是大图标，但此API返回的是完整的网格大小
 	if (itemSpacing != 0) {
@@ -189,7 +209,7 @@ std::vector<std::vector<POINT>> GetListviewItemPosition(POINT itmePoint,
 
 	if (FAILED(hr)) {
 		std::cerr << "Failed to get item spacing using both methods."
-		          << std::endl;
+			<< std::endl;
 		CoUninitialize();
 		return IconGrid;
 	}
@@ -219,7 +239,7 @@ std::vector<std::vector<POINT>> GetListviewItemPosition(POINT itmePoint,
 	if (!IntersectRect(&rcEffective, &rc, &rcWorkArea)) {
 		// 如果没有交集 (几乎不可能)，则说明桌面完全不可见
 		std::cerr << "Desktop view area has no intersection with the work area."
-		          << std::endl;
+			<< std::endl;
 		CoUninitialize();
 		return IconGrid;
 	}
@@ -243,8 +263,8 @@ std::vector<std::vector<POINT>> GetListviewItemPosition(POINT itmePoint,
 	// 10. 填充二维数组
 	for (int r = 0; r < rows; ++r) {
 		for (int c = 0; c < cols; ++c) {
-			POINT freePt = {c * colWidth + itmePoint.x,
-			                r * rowHeight + itmePoint.y};
+			POINT freePt = { c * colWidth + itmePoint.x,
+							r * rowHeight + itmePoint.y };
 			IconGrid[r][c] = freePt;
 		}
 	}
@@ -266,26 +286,27 @@ std::list<IconitemWithIndex> GetIconPositionWithName() {
 	GetWindowThreadProcessId(hListView, &dwProcessId);
 	HANDLE hProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, dwProcessId);
 
-	tagLVITEM64W *_lv, lvi;
+	tagLVITEM64W* _lv, lvi;
 	LPVOID lpvPt = VirtualAllocEx(hProcess, NULL, sizeof(POINT), MEM_COMMIT,
-	                              PAGE_READWRITE);
+		PAGE_READWRITE);
 
 	_lv = (tagLVITEM64W*)VirtualAllocEx(hProcess, NULL, sizeof(tagLVITEM64W),
-	                                    MEM_COMMIT, PAGE_READWRITE);
+		MEM_COMMIT, PAGE_READWRITE);
 
-	wchar_t item[512] = {0};
+	wchar_t item[512] = { 0 };
 	char* _item;
 	POINT pt;
 
 	int m_iconCount = ListView_GetItemCount(hListView);
 	_item =
-	    (char*)VirtualAllocEx(hProcess, NULL, 512, MEM_COMMIT, PAGE_READWRITE);
+		(char*)VirtualAllocEx(hProcess, NULL, 512, MEM_COMMIT, PAGE_READWRITE);
 
-	ZeroMemory(&lvi, sizeof(LVITEM));
+	ZeroMemory(&lvi, sizeof(tagLVITEM64W));
+
 	lvi.mask = LVIF_TEXT;
 	lvi.cchTextMax = 512;
 	// 设置index为0的icon到最顶部,方便获取正确的偏移量
-	SetIconPosition(hListView, 0, POINT{0, 0});
+	SetIconPosition(hListView, 0, POINT{ 0, 0 });
 	for (int i = 0; i < m_iconCount; i++) {
 		ListView_GetItemPosition(hListView, i, lpvPt);
 		ReadProcessMemory(hProcess, lpvPt, &pt, sizeof(POINT), NULL);
@@ -294,11 +315,11 @@ std::list<IconitemWithIndex> GetIconPositionWithName() {
 		lvi.pszText = (INT64)_item;
 		if (!WriteProcessMemory(hProcess, _lv, &lvi, sizeof(LVITEM64W), NULL)) {
 			std::cerr << "WriteProcessMemory failed: " << GetLastError()
-			          << std::endl;
+				<< std::endl;
 		}
 		SendMessage(hListView, LVM_GETITEMTEXT, (WPARAM)i, (LPARAM)_lv);
 		ReadProcessMemory(hProcess, _item, item, 512 * sizeof(wchar_t), NULL);
-		IconList.push_back(IconitemWithIndex{i, pt, item});
+		IconList.push_back(IconitemWithIndex{ i, pt, item });
 	}
 
 	VirtualFreeEx(hProcess, lpvPt, 0, MEM_RELEASE);
@@ -311,73 +332,12 @@ std::list<IconitemWithIndex> GetIconPositionWithName() {
 // 设置图标位置
 void SetIconPosition(HWND hListView, int iIconIndex, POINT pt) {
 	SendMessage(hListView, LVM_SETITEMPOSITION, (WPARAM)iIconIndex,
-	            MAKELPARAM(pt.x, pt.y));
-}
-
-// 监听文件夹
-void WatchDirectoryChanges(LPCWSTR lpDirectoryPath) {
-	// 打开目录句柄
-	HANDLE hDir =
-	    CreateFileW(lpDirectoryPath, FILE_LIST_DIRECTORY,
-	                FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
-	                NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
-	if (hDir == INVALID_HANDLE_VALUE) {
-		std::wcout << L"无法打开目录。错误代码: " << GetLastError()
-		           << std::endl;
-		return;
-	}
-	const DWORD dwBufferSize = 65536;
-	BYTE buffer[dwBufferSize];
-	while (true) {
-		DWORD dwBytesReturned = 0;
-		// 读取目录变化
-		if (ReadDirectoryChangesW(
-		        hDir, buffer, dwBufferSize, FALSE,
-		        FILE_NOTIFY_CHANGE_FILE_NAME | FILE_NOTIFY_CHANGE_DIR_NAME |
-		            FILE_NOTIFY_CHANGE_ATTRIBUTES | FILE_NOTIFY_CHANGE_SIZE |
-		            FILE_NOTIFY_CHANGE_LAST_WRITE | FILE_NOTIFY_CHANGE_SECURITY,
-		        &dwBytesReturned, NULL, NULL)) {
-			if (dwBytesReturned == 0) {
-				continue;
-			}
-			PFILE_NOTIFY_INFORMATION pNotifyInfo =
-			    reinterpret_cast<PFILE_NOTIFY_INFORMATION>(buffer);
-			do {
-				// 获取文件名（宽字符）
-				std::wstring fileName(pNotifyInfo->FileName,
-				                      pNotifyInfo->FileNameLength /
-				                          sizeof(WCHAR));
-				// 查找事件类型的描述
-				const wchar_t* typeDescription = L"未知类型";
-				for (const auto& type : changeTypes) {
-					if (type.type == pNotifyInfo->Action) {
-						typeDescription = type.description;
-						break;
-					}
-				}
-				// 打印事件类型和文件名
-				std::wcout << L"[变更类型: " << std::hex << pNotifyInfo->Action
-				           << L"] " << typeDescription << L" 文件: " << fileName
-				           << std::endl;
-				// 移动到下一个记录
-				if (pNotifyInfo->NextEntryOffset == 0)
-					break;
-				pNotifyInfo = reinterpret_cast<PFILE_NOTIFY_INFORMATION>(
-				    reinterpret_cast<BYTE*>(pNotifyInfo) +
-				    pNotifyInfo->NextEntryOffset);
-			} while (true);
-		} else {
-			std::wcerr << L"ReadDirectoryChangesW 失败，错误代码: "
-			           << GetLastError() << std::endl;
-			break;
-		}
-	}
-	CloseHandle(hDir);
+		MAKELPARAM(pt.x, pt.y));
 }
 
 void arrangeDesktopIcons(HWND hListView,
-                         const std::vector<std::vector<POINT>>& PointList,
-                         const FileClassification& classification) {
+	const std::vector<std::vector<POINT>>& PointList,
+	const FileClassification& classification) {
 	// 获取行数和列数
 	int rows = PointList.size();
 	int cols = PointList[0].size();
@@ -410,7 +370,8 @@ void arrangeDesktopIcons(HWND hListView,
 			if (totalPlaced < aCount && itA != aClass.end()) {
 				filePath = *itA;
 				++itA;
-			} else if (itB != bClass.end()) {
+			}
+			else if (itB != bClass.end()) {
 				// 如果目录图标放置完毕，则放置文件图标
 				filePath = *itB;
 				++itB;

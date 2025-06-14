@@ -1,0 +1,49 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36109.1
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PikiniDesktopShell", "PikiniDesktopShell\PikiniDesktopShell.vcxproj", "{3030DC84-8557-4C06-A732-38610008CCBB}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Debug|ARM = Debug|ARM
+		Debug|ARM64 = Debug|ARM64
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Release|Any CPU = Release|Any CPU
+		Release|ARM = Release|ARM
+		Release|ARM64 = Release|ARM64
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{3030DC84-8557-4C06-A732-38610008CCBB}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{3030DC84-8557-4C06-A732-38610008CCBB}.Debug|Any CPU.Build.0 = Debug|x64
+		{3030DC84-8557-4C06-A732-38610008CCBB}.Debug|ARM.ActiveCfg = Debug|x64
+		{3030DC84-8557-4C06-A732-38610008CCBB}.Debug|ARM.Build.0 = Debug|x64
+		{3030DC84-8557-4C06-A732-38610008CCBB}.Debug|ARM64.ActiveCfg = Debug|x64
+		{3030DC84-8557-4C06-A732-38610008CCBB}.Debug|ARM64.Build.0 = Debug|x64
+		{3030DC84-8557-4C06-A732-38610008CCBB}.Debug|x64.ActiveCfg = Debug|x64
+		{3030DC84-8557-4C06-A732-38610008CCBB}.Debug|x64.Build.0 = Debug|x64
+		{3030DC84-8557-4C06-A732-38610008CCBB}.Debug|x86.ActiveCfg = Debug|Win32
+		{3030DC84-8557-4C06-A732-38610008CCBB}.Debug|x86.Build.0 = Debug|Win32
+		{3030DC84-8557-4C06-A732-38610008CCBB}.Release|Any CPU.ActiveCfg = Release|x64
+		{3030DC84-8557-4C06-A732-38610008CCBB}.Release|Any CPU.Build.0 = Release|x64
+		{3030DC84-8557-4C06-A732-38610008CCBB}.Release|ARM.ActiveCfg = Release|x64
+		{3030DC84-8557-4C06-A732-38610008CCBB}.Release|ARM.Build.0 = Release|x64
+		{3030DC84-8557-4C06-A732-38610008CCBB}.Release|ARM64.ActiveCfg = Release|x64
+		{3030DC84-8557-4C06-A732-38610008CCBB}.Release|ARM64.Build.0 = Release|x64
+		{3030DC84-8557-4C06-A732-38610008CCBB}.Release|x64.ActiveCfg = Release|x64
+		{3030DC84-8557-4C06-A732-38610008CCBB}.Release|x64.Build.0 = Release|x64
+		{3030DC84-8557-4C06-A732-38610008CCBB}.Release|x86.ActiveCfg = Release|Win32
+		{3030DC84-8557-4C06-A732-38610008CCBB}.Release|x86.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {351A19F1-30D9-415E-BABD-52854800E821}
+	EndGlobalSection
+EndGlobal
