@@ -1,0 +1,1 @@
+MainPackage=C:\Users\123\Desktop\PikiniDesktop\Msix\bin\x64\Release\Msix_1.0.2.0_x64.msix
